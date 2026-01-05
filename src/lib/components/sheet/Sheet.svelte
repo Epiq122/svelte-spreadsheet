@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cellToIndex, numberToAlphabet, type Cell } from './sheet-utils';
 
-	let { data }: { data: Cell[][] } = $props();
+	let { data = $bindable() }: { data: Cell[][] } = $props();
 	let editedCell: string | null = $state(null);
 	let selectedCell: string | null = $state(null);
 
