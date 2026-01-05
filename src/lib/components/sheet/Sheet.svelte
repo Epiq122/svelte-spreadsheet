@@ -4,6 +4,11 @@
 	let { data = $bindable() }: { data: Cell[][] } = $props();
 	let editedCell: string | null = $state(null);
 	let selectedCell: string | null = $state(null);
+	let selectedCellObject = $derived.by(() => {
+		if (!selectedCell) return null;
+		const [row, col] = selectedCell.split(',');
+		return data[+row - 1]?.[+col - 1];
+	});
 
 	let numRows = $derived(data.length > 10 ? data.length : 10);
 	let numCols = $derived.by(() => {
@@ -60,6 +65,20 @@
 	}
 </script>
 
+{#if selectedCell}
+	<br />
+	<label for="bgColor">Background</label>
+	<input
+		type="color"
+		id="bgColor"
+		value={selectedCellObject?.bgColor || '#222222'}
+		oninput={(e) => {
+			if (!selectedCell) return;
+			const [row, col] = selectedCell?.split(',');
+			setCell(+row - 1, +col - 1, 'bgColor', e.currentTarget.value);
+		}}
+	/>
+{/if}
 <table class="sheet">
 	<tbody>
 		{#each { length: numRows + 1 }, row}
