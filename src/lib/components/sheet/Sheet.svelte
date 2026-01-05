@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { numberToAlphabet, type Cell } from './sheet-utils';
+	import { cellToIndex, numberToAlphabet, type Cell } from './sheet-utils';
 
 	let { data }: { data: Cell[][] } = $props();
 	let editedCell: string | null = $state(null);
@@ -26,6 +26,36 @@
 		} else {
 			data[row] = [];
 			data[row][col] = { [prop]: value };
+		}
+	}
+
+	function parseValue(value: string | undefined): string | number {
+		if (!value) return '';
+		if (value.startsWith('=')) {
+			const funcName = value.split('(')[0].substring(1);
+			const args = value.replace(`=${funcName}`, '').replace(/[()]/g, '').split(',');
+			const vals = args.map((arg) => {
+				const cell = cellToIndex(arg);
+				const val = data[cell.row - 1]?.[cell.col - 1]?.value;
+				if (val?.startsWith('=')) {
+					return Number(parseValue(val));
+				}
+				return val ? Number(val) : 0;
+			});
+			return vals.reduce(
+				(prev, curr) => {
+					if (funcName === 'SUM') {
+						return prev + curr;
+					}
+					if (funcName === 'MULTIPLY') {
+						return prev * curr;
+					}
+					return 0;
+				},
+				funcName === 'MULTIPLY' ? 1 : 0
+			);
+		} else {
+			return value;
 		}
 	}
 </script>
@@ -66,7 +96,7 @@
 
 						{#if row > 0 && column > 0}
 							{#if editedCell !== currentCell}
-								{cellData || ''}
+								{parseValue(cellData)}
 							{:else}
 								<input
 									use:init
@@ -76,6 +106,11 @@
 									style:color={cell?.color}
 									oninput={(e) => {
 										setCell(row - 1, column - 1, 'value', e.currentTarget.value);
+									}}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											editedCell = null;
+										}
 									}}
 								/>
 							{/if}
